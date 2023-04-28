@@ -1,46 +1,46 @@
 <html>
-    <head>
-        <script src="streams.js"></script>
-        <link rel="icon" type="image/x-icon" href="branding/favicon.ico">
-        <script>
+	<head>
+		<script src="streams.js"></script>
+		<link rel="icon" type="image/x-icon" href="branding/favicon.ico">
+		<script>
 			var games={};
-		
+
 			function Hide(game) {
 				games[game.currentTarget.innerText].forEach(card => card.style.display='none');
 			}
-			
-            function Deserialize() {
+
+			function Deserialize() {
 				body=document.createElement('div');
 				body.className="body";
-                streams.forEach(entry => {
-                    card=document.createElement('div');
-                    card.className="card";
-                    link=document.createElement('a');
-                    link.href="https://www.twitch.tv/"+entry['streamer'];
-                    image=document.createElement('img');
-                    image.src=entry['thumbnail'];
-                    link.appendChild(image);
-                    card.appendChild(link);
-                    text=document.createElement('div');
-                    game=document.createElement('div');
-                    game.className='game';
-                    game.innerText=entry['game'];
+				streams.forEach(entry => {
+					card=document.createElement('div');
+					card.className="card";
+					link=document.createElement('a');
+					link.href="https://www.twitch.tv/"+entry['streamer'];
+					image=document.createElement('img');
+					image.src=entry['thumbnail'];
+					link.appendChild(image);
+					card.appendChild(link);
+					text=document.createElement('div');
+					game=document.createElement('div');
+					game.className='game';
+					game.innerText=entry['game'];
 					game.addEventListener("click", Hide);
 					if (games.hasOwnProperty(game.innerText))
 						games[game.innerText].push(card);
 					else
 						games[game.innerText]=[card];
-                    text.appendChild(game);
-                    streamer=document.createElement('div');
-                    streamer.className="streamer";
-                    streamer.innerText=entry['streamer']+" | "+entry['viewers'];
-                    text.appendChild(streamer);
-                    title=document.createElement('div');
-                    title.className='title';
-                    title.innerText=entry['title'];
-                    text.appendChild(title);
-                    tags=document.createElement('div');
-                    tags.className='tags';
+					text.appendChild(game);
+					streamer=document.createElement('div');
+					streamer.className="streamer";
+					streamer.innerText=entry['streamer']+" | "+entry['viewers'];
+					text.appendChild(streamer);
+					title=document.createElement('div');
+					title.className='title';
+					title.innerText=entry['title'];
+					text.appendChild(title);
+					tags=document.createElement('div');
+					tags.className='tags';
 					entry['tags'].forEach(name => {
 						tag=document.createElement('span');
 						tag.className='tag';
@@ -48,70 +48,67 @@
 						tags.appendChild(tag);
 						tags.appendChild(document.createElement('wbr'));
 					});
-                    text.appendChild(tags);
-                    card.appendChild(text);
+					text.appendChild(tags);
+					card.appendChild(text);
 					body.appendChild(card);
-                });
-                document.body.appendChild(body);
-            }
-        </script>
-        <style>
-            body {
-                background-color: #9146FF;
+				});
+				document.body.appendChild(body);
+			}
+		</script>
+		<style>
+			body {
+				background-color: #9146FF;
 				margin: 2em;
 				padding: 0px;
-            }
-			
+			}
+
 			div.body {
 				display: grid;
 				grid-template-columns: repeat(2, 1fr);
 				grid-gap: 2em 2em;
 			}
 
-            div.card {
-                display: flex;
-                font-weight: normal;
-                background-color: white;
-                border-radius: 25px;
-                padding: 2em;
-            }
+			div.card {
+				display: flex;
+				font-weight: normal;
+				background-color: white;
+				border-radius: 25px;
+				padding: 2em;
+			}
 
-            div.divider {
-            }
-
-            div.streamer {
-                font-family: "Segoe UI";
-                font-size: 75%;
-                font-weight: bold;
-            }
-
-            div.title {
-				font-family: "DejaVu Serif";
-                font-size: 100%;
-            }
-
-            div.game {
-                font-size: 150%;
-                font-family: "Calibri";
+			div.streamer {
+				font-family: "Segoe UI";
+				font-size: 75%;
 				font-weight: bold;
-                margin-bottom: 2em;
+			}
+
+			div.title {
+				font-family: "DejaVu Serif";
+				font-size: 100%;
+			}
+
+			div.game {
+				font-size: 150%;
+				font-family: "Calibri";
+				font-weight: bold;
+				margin-bottom: 2em;
 				cursor: pointer;
 				color: #9146FF;
-            }
+			}
 
-            div.tags {
-                font-size: 80%;
-                font-family: "Consolas";
-                font-weight: normal;
-                margin-top: 5em;
+			div.tags {
+				font-size: 80%;
+				font-family: "Consolas";
+				font-weight: normal;
+				margin-top: 5em;
 				line-height: 3em;
-            }
-			
+			}
+
 			div.controls {
 				text-align: right;
 				margin-left: 2em;
 			}
-			
+
 			span.tag {
 				background-color: lightgrey;
 				color: black;
@@ -119,24 +116,24 @@
 				border-radius: 5px;
 				margin-right: 1em;
 			}
-			
+
 			button {
 				cursor: pointer;
 				margin-left: 1em;
 			}
 
-            img {
-                margin-right: 1em;
-                vertical-align: top;
-                border-radius: 25px;
-            }
+			img {
+				margin-right: 1em;
+				vertical-align: top;
+				border-radius: 25px;
+			}
 
-            a {
-                text-decoration: none;
-            }
-        </style>
-    </head>
-    <body onload="Deserialize();">
+			a {
+				text-decoration: none;
+			}
+		</style>
+	</head>
+	<body onload="Deserialize();">
 
-    </body>
+	</body>
 </html>
