@@ -22,6 +22,9 @@ def blacklisted(tags):
 				return True
 	return False
 
+def reject(name,reason):
+	print("Rejecting: "+name+" ("+str(reason)+")")
+
 games=options['categories'][options['group']]
 
 headers={
@@ -32,18 +35,18 @@ headers={
 streams=[]
 maxChunkSize=100
 for chunk in [games[index:index+maxChunkSize] for index in range(0,len(games),maxChunkSize)]:
-	request=requests.get("https://api.twitch.tv/helix/games?"+"&".join([f"name={urllib.parse.quote(name)}" for name in chunk]), headers=headers)
+	request=requests.get("https://api.twitch.tv/helix/games?"+"&".join([f"name={urllib.parse.quote(name)}" for name in chunk]),headers=headers)
 	gameData=json.loads(request.text)
 	validGames=[]
 	for game in gameData['data']:
-		validGames.append(game['name']);
+		validGames.append(game['name'])
 	for game in chunk:
 		if not game in validGames:
-			print("Game not found: "+game);
+			print("Game not found: "+game)
 
 	cursor="*"
 	while (cursor):
-		request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+("&after="+cursor+"&" if cursor != "*" and cursor != "" else "&")+"&".join([f"game_id={entry['id']}" for entry in gameData['data']]), headers=headers)
+		request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+("&after="+cursor+"&" if cursor != "*" and cursor != "" else "&")+"&".join([f"game_id={entry['id']}" for entry in gameData['data']]),headers=headers)
 		streamData=json.loads(request.text)
 		streams.extend(streamData['data'])
 		cursor=""
@@ -54,17 +57,25 @@ for chunk in [games[index:index+maxChunkSize] for index in range(0,len(games),ma
 results=[]
 weights={}
 for entry in streams:
-	tags=entry['tags'];
+	streamer=entry['user_name']
+	tags=entry['tags']
 	if tags and "tags" in options and "filters" in options['tags']:
 		if blacklisted([tag.lower() for tag in tags]):
+			reject(streamer,", ".join(tags))
 			continue
 	viewers=int(entry['viewer_count']);
 	if "viewers" in options and "min" in options['viewers'] and "max" in options['viewers']:
 		if viewers < options['viewers']['min'] or viewers > options['viewers']['max']:
-			continue;
+			reject(streamer,str(viewers)+" viewers")
+			continue
+	request=requests.get("https://api.twitch.tv/helix/chat/settings?broadcaster_id="+entry['user_id'],headers=headers)
+	streamerData=json.loads(request.text)['data'][0]
+	if (streamerData['follower_mode']):
+		reject(streamer,"Follower-Only Chat")
+		continue
 	name=entry['game_name']
 	results.append({
-		"streamer": entry['user_name'],
+		"streamer": streamer,
 		"title": entry['title'],
 		"viewers": viewers,
 		"game": name,
@@ -79,4 +90,4 @@ for entry in streams:
 with open("streams.js",'w') as output:
 	output.write("var streams="+json.dumps(sorted(results,key=lambda value:(weights[value['game']],value['viewers'])))+";")
 
-webbrowser.open("streams.html");
+webbrowser.open("streams.html")
