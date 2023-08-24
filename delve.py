@@ -30,7 +30,8 @@ headers={
 }
 
 streams=[]
-for chunk in games:
+maxChunkSize=100
+for chunk in [games[index:index+maxChunkSize] for index in range(0,len(games),maxChunkSize)]:
 	request=requests.get("https://api.twitch.tv/helix/games?"+"&".join([f"name={urllib.parse.quote(name)}" for name in chunk]), headers=headers)
 	gameData=json.loads(request.text)
 	validGames=[]
@@ -42,7 +43,7 @@ for chunk in games:
 
 	cursor="*"
 	while (cursor):
-		request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first=100"+("&after="+cursor+"&" if cursor != "*" and cursor != "" else "&")+"&".join([f"game_id={entry['id']}" for entry in gameData['data']]), headers=headers)
+		request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+("&after="+cursor+"&" if cursor != "*" and cursor != "" else "&")+"&".join([f"game_id={entry['id']}" for entry in gameData['data']]), headers=headers)
 		streamData=json.loads(request.text)
 		streams.extend(streamData['data'])
 		cursor=""
