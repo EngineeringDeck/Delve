@@ -4,15 +4,12 @@ token: ""
 clientID: ""
 # groups of lists of Twitch categories to search for live streamers in
 # at a minimum, the default group must be specified
-# each group list is split into sublists of <=100 categories due to limitations of the Twitch API
 categories:
   default:
-    -
-      - "Portal"
-      - "Portal 2"
+    - "Portal"
+    - "Portal 2"
   dev:
-    -
-      - "Software and Game Development"
+    - "Software and Game Development"
 # filter out tags that contain any of the following terms (not case sensitive)
 # not required
 tags:
