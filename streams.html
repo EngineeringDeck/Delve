@@ -54,7 +54,12 @@
 
 			function Load() {
 				const queryParams=new URLSearchParams(window.location.search);
-				const scriptFile=queryParams.has('data') ? queryParams.get('data') : "streams.js";
+				let scriptFile="streams.js";
+				if (queryParams.has('data')) {
+					let name=queryParams.get('data');
+					scriptFile=name+".js";
+					document.title=document.title+" - "+name.charAt(0).toUpperCase()+name.slice(1).toLowerCase();
+				}
 				let script=document.createElement("script");
 				script.setAttribute("src",scriptFile);
 				script.setAttribute("type","text/javascript");
