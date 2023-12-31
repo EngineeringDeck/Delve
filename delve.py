@@ -113,6 +113,9 @@ for entry in streams:
 	if (streamerData['follower_mode']):
 		reject(streamer,"Follower-Only Chat")
 		continue
+	if (streamerData['subscriber_mode']):
+		reject(streamer,"Subscriber-Only Chat")
+		continue
 	name=entry['game_name']
 	results.append({
 		"streamer": streamer,
