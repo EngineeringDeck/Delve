@@ -3,12 +3,13 @@
 import argparse
 from datetime import datetime,timedelta
 import json
+import os
 import requests
 import urllib.parse
 import webbrowser
 import yaml
 
-with open("delve.yaml",'r') as input:
+with open(os.environ['DELVE_OPTIONS_PATH'],'r') as input:
 	options=yaml.load(input.read(),Loader=yaml.Loader)
 
 arguments=argparse.ArgumentParser()
@@ -30,7 +31,7 @@ def reject(name,reason):
 	print("Rejecting: "+name+" ("+str(reason)+")")
 
 def write(filename,data):
-	with open(filename,'w') as output:
+	with open(os.path.join(os.environ['DELVE_OUTPUT_PATH'],filename),'w') as output:
 		output.write(data)
 
 headers={
