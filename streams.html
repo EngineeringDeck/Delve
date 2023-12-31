@@ -1,6 +1,5 @@
 <html>
 	<head>
-		<script src="streams.js"></script>
 		<link rel="icon" type="image/x-icon" href="branding/favicon.ico">
 		<script>
 			var games={};
@@ -15,13 +14,6 @@
 				streams.forEach(entry => {
 					card=document.createElement('div');
 					card.className="card";
-					link=document.createElement('a');
-					link.href="https://www.twitch.tv/"+entry['streamer'];
-					image=document.createElement('img');
-					image.src=entry['thumbnail'];
-					link.appendChild(image);
-					card.appendChild(link);
-					text=document.createElement('div');
 					game=document.createElement('div');
 					game.className='game';
 					game.innerText=entry['game'];
@@ -30,15 +22,21 @@
 						games[game.innerText].push(card);
 					else
 						games[game.innerText]=[card];
-					text.appendChild(game);
-					streamer=document.createElement('div');
-					streamer.className="streamer";
-					streamer.innerText=entry['streamer']+" | "+entry['viewers'];
-					text.appendChild(streamer);
+					card.appendChild(game);
+					link=document.createElement('a');
+					link.href="https://www.twitch.tv/"+entry['streamer'];
+					image=document.createElement('img');
+					image.src=entry['thumbnail'];
+					link.appendChild(image);
+					card.appendChild(link);
 					title=document.createElement('div');
 					title.className='title';
 					title.innerText=entry['title'];
-					text.appendChild(title);
+					card.appendChild(title);
+					streamer=document.createElement('div');
+					streamer.className="streamer";
+					streamer.innerText=entry['streamer']+" | "+entry['viewers'];
+					card.appendChild(streamer);
 					tags=document.createElement('div');
 					tags.className='tags';
 					entry['tags'].forEach(name => {
@@ -48,11 +46,22 @@
 						tags.appendChild(tag);
 						tags.appendChild(document.createElement('wbr'));
 					});
-					text.appendChild(tags);
-					card.appendChild(text);
+					card.appendChild(tags);
 					body.appendChild(card);
 				});
 				document.body.appendChild(body);
+			}
+
+			function Load() {
+				const queryParams=new URLSearchParams(window.location.search);
+				const scriptFile=queryParams.has('data') ? queryParams.get('data') : "streams.js";
+				let script=document.createElement("script");
+				script.setAttribute("src",scriptFile);
+				script.setAttribute("type","text/javascript");
+				script.addEventListener("load",() => {
+					Deserialize();
+				});
+				document.body.appendChild(script);
 			}
 		</script>
 		<style>
@@ -133,7 +142,7 @@
 			}
 		</style>
 	</head>
-	<body onload="Deserialize();">
+	<body onload="Load();">
 
 	</body>
 </html>

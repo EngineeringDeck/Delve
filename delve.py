@@ -12,6 +12,7 @@ with open("delve.yaml",'r') as input:
 
 arguments=argparse.ArgumentParser()
 arguments.add_argument("-g","--group",default="default",help="Category group")
+arguments.add_argument("-o","--output",help="Output file")
 for attribute, value in vars(arguments.parse_args()).items():
 	options[attribute]=value
 
@@ -24,6 +25,10 @@ def blacklisted(tags):
 
 def reject(name,reason):
 	print("Rejecting: "+name+" ("+str(reason)+")")
+
+def write(filename,data):
+	with open(filename,'w') as output:
+		output.write(data)
 
 games=options['categories'][options['group']]
 
@@ -87,7 +92,10 @@ for entry in streams:
 	else:
 		weights[name]=1
 
-with open("streams.js",'w') as output:
-	output.write("var streams="+json.dumps(sorted(results,key=lambda value:(weights[value['game']],value['viewers'])))+";")
+output="var streams="+json.dumps(sorted(results,key=lambda value:(weights[value['game']],value['viewers'])))+";"
+if 'output' in options:
+	write(options['output'],output)
+else:
+	write("streams.js",output)
+	webbrowser.open("streams.html")
 
-webbrowser.open("streams.html")
