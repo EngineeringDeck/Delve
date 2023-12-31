@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from datetime import datetime,timedelta
 import json
 import requests
 import urllib.parse
@@ -14,6 +15,7 @@ arguments=argparse.ArgumentParser()
 arguments.add_argument("-g","--group",default="default",help="Category group")
 arguments.add_argument("-o","--output",help="Output file")
 arguments.add_argument("-f","--follows",action='store_true',help="Search followed channels rather than games")
+arguments.add_argument("-v","--variety",action='store_true',help="Search for variety streamers rather than games")
 for attribute, value in vars(arguments.parse_args()).items():
 	options[attribute]=value
 
@@ -44,6 +46,31 @@ if options['follows']:
 		request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+"&"+"&".join([f"user_login={entry}" for entry in chunk]),headers=headers)
 		streamData=json.loads(request.text)
 		streams.extend(streamData['data'])
+elif options['variety']:
+	thresholds=options['clips']
+	cursor="*"
+	startTime=datetime.now()
+	while cursor and datetime.now() < startTime+timedelta(minutes=options['runtime']):
+		request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+("&after="+cursor if cursor != "*" and cursor != "" else ""),headers=headers)
+		streamData=json.loads(request.text)
+		chunk=streamData['data']
+		ids={entry['user_id']: entry for entry in chunk}
+		if len(ids) > 0:
+			request=requests.get("https://api.twitch.tv/helix/users?"+"&".join([f"id={id}" for id in ids.keys()]),headers=headers)
+			userData=json.loads(request.text)
+			for entry in userData['data']:
+				id=entry['id']
+				if "variety" in entry['description'].lower():
+					streams.append(ids[id])
+				else:
+					request=requests.get("https://api.twitch.tv/helix/clips?broadcaster_id="+id+"&first="+str(maxChunkSize),headers=headers)
+					clipData=json.loads(request.text)
+					games={clipID for clip in clipData['data'] if (creationDate:=datetime.fromisoformat(clip['created_at'])) > datetime.now(creationDate.tzinfo)-timedelta(days=thresholds['age']) if len(clipID:=clip['game_id']) > 0}
+					if len(games) > thresholds['games']:
+						streams.append(ids[id])
+		if 'pagination' in streamData:
+			if 'cursor' in streamData['pagination']:
+				cursor=streamData['pagination']['cursor']
 else:
 	games=options['categories'][options['group']]
 	for chunk in [games[index:index+maxChunkSize] for index in range(0,len(games),maxChunkSize)]:
