@@ -13,6 +13,7 @@ with open("delve.yaml",'r') as input:
 arguments=argparse.ArgumentParser()
 arguments.add_argument("-g","--group",default="default",help="Category group")
 arguments.add_argument("-o","--output",help="Output file")
+arguments.add_argument("-f","--follows",action='store_true',help="Search followed channels rather than games")
 for attribute, value in vars(arguments.parse_args()).items():
 	options[attribute]=value
 
@@ -30,8 +31,6 @@ def write(filename,data):
 	with open(filename,'w') as output:
 		output.write(data)
 
-games=options['categories'][options['group']]
-
 headers={
 	"Authorization": "Bearer "+options['token'],
 	"Client-Id": options['clientID']
@@ -39,25 +38,33 @@ headers={
 
 streams=[]
 maxChunkSize=100
-for chunk in [games[index:index+maxChunkSize] for index in range(0,len(games),maxChunkSize)]:
-	request=requests.get("https://api.twitch.tv/helix/games?"+"&".join([f"name={urllib.parse.quote(name)}" for name in chunk]),headers=headers)
-	gameData=json.loads(request.text)
-	validGames=[]
-	for game in gameData['data']:
-		validGames.append(game['name'])
-	for game in chunk:
-		if not game in validGames:
-			print("Game not found: "+game)
-
-	cursor="*"
-	while (cursor):
-		request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+("&after="+cursor+"&" if cursor != "*" and cursor != "" else "&")+"&".join([f"game_id={entry['id']}" for entry in gameData['data']]),headers=headers)
+if options['follows']:
+	channels=options['channels']
+	for chunk in [channels[index:index+maxChunkSize] for index in range(0,len(channels),maxChunkSize)]:
+		request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+"&"+"&".join([f"user_login={entry}" for entry in chunk]),headers=headers)
 		streamData=json.loads(request.text)
 		streams.extend(streamData['data'])
-		cursor=""
-		if 'pagination' in streamData:
-			if 'cursor' in streamData['pagination']:
-				cursor=streamData['pagination']['cursor']
+else:
+	games=options['categories'][options['group']]
+	for chunk in [games[index:index+maxChunkSize] for index in range(0,len(games),maxChunkSize)]:
+		request=requests.get("https://api.twitch.tv/helix/games?"+"&".join([f"name={urllib.parse.quote(name)}" for name in chunk]),headers=headers)
+		gameData=json.loads(request.text)
+		validGames=[]
+		for game in gameData['data']:
+			validGames.append(game['name'])
+		for game in chunk:
+			if not game in validGames:
+				print("Game not found: "+game)
+
+		cursor="*"
+		while (cursor):
+			request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+("&after="+cursor+"&" if cursor != "*" and cursor != "" else "&")+"&".join([f"game_id={entry['id']}" for entry in gameData['data']]),headers=headers)
+			streamData=json.loads(request.text)
+			streams.extend(streamData['data'])
+			cursor=""
+			if 'pagination' in streamData:
+				if 'cursor' in streamData['pagination']:
+					cursor=streamData['pagination']['cursor']
 
 results=[]
 weights={}
