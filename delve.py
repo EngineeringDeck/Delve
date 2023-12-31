@@ -85,7 +85,7 @@ else:
 				print("Game not found: "+game)
 
 		cursor="*"
-		while (cursor):
+		while cursor:
 			request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+("&after="+cursor+"&" if cursor != "*" and cursor != "" else "&")+"&".join([f"game_id={entry['id']}" for entry in gameData['data']]),headers=headers)
 			streamData=json.loads(request.text)
 			streams.extend(streamData['data'])
