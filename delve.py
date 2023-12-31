@@ -131,8 +131,9 @@ for entry in streams:
 		weights[name]=1
 
 output="var streams="+json.dumps(sorted(results,key=lambda value:(weights[value['game']],value['viewers'])))+";"
-if 'output' in options:
-	write(options['output'],output)
+path=options['output']
+if path is not None:
+	write(path,output)
 else:
 	write("streams.js",output)
 	webbrowser.open("streams.html")
