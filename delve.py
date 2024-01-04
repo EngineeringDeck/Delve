@@ -38,7 +38,8 @@ def write(filename,data):
 
 headers={
 	"Authorization": "Bearer "+options['token'],
-	"Client-Id": options['clientID']
+	"Client-Id": options['clientID'],
+	"Accept": "application/json"
 }
 
 streams=[]
@@ -104,7 +105,6 @@ else:
 		for game in chunk:
 			if not game in validGames:
 				print("Game not found: "+game)
-
 		cursor="*"
 		while cursor:
 			request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+("&after="+cursor+"&" if cursor != "*" and cursor != "" else "&")+"&".join([f"game_id={entry['id']}" for entry in gameData['data']]),headers=headers)
