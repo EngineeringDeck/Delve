@@ -16,7 +16,7 @@ arguments=argparse.ArgumentParser()
 arguments.add_argument("-o","--output",help="Output file")
 operation=arguments.add_mutually_exclusive_group(required=True)
 operation.add_argument("-g","--group",default="default",help="Category group")
-operation.add_argument("-t","--type",default="Indie",help="Type (genre) of game")
+operation.add_argument("-t","--type",default=None,help="Type (genre) of game")
 operation.add_argument("-f","--follows",action='store_true',help="Search followed channels rather than games")
 operation.add_argument("-v","--variety",action='store_true',help="Search for variety streamers rather than games")
 for attribute, value in vars(arguments.parse_args()).items():
