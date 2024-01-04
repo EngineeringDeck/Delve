@@ -16,6 +16,7 @@ arguments=argparse.ArgumentParser()
 arguments.add_argument("-o","--output",help="Output file")
 operation=arguments.add_mutually_exclusive_group(required=True)
 operation.add_argument("-g","--group",default="default",help="Category group")
+operation.add_argument("-t","--type",default="Indie",help="Type (genre) of game")
 operation.add_argument("-f","--follows",action='store_true',help="Search followed channels rather than games")
 operation.add_argument("-v","--variety",action='store_true',help="Search for variety streamers rather than games")
 for attribute, value in vars(arguments.parse_args()).items():
@@ -73,6 +74,25 @@ elif options['variety']:
 		if 'pagination' in streamData:
 			if 'cursor' in streamData['pagination']:
 				cursor=streamData['pagination']['cursor']
+elif "type" in options and (genre:=options['type']) is not None:
+	genre=genre.capitalize()
+	chunkOffset=0
+	request=requests.post("https://api.igdb.com/v4/genres",data=f"fields name; where name=\"{genre}\";",headers=headers)
+	genreData=json.loads(request.text)
+	genreID=genreData[0]['id']
+	while (len(gameData:=json.loads(requests.post("https://api.igdb.com/v4/games",data=f"fields name; where genres=[{genreID}]; offset {chunkOffset}; limit {maxChunkSize};",headers=headers).text)) > 0):
+		request=requests.get("https://api.twitch.tv/helix/games?"+"&".join([f"igdb_id={game['id']}" for game in gameData]),headers=headers)
+		games=json.loads(request.text)['data']
+		cursor="*"
+		while cursor:
+			request=requests.get("https://api.twitch.tv/helix/streams?language=en&type=live&first="+str(maxChunkSize)+("&after="+cursor+"&" if cursor != "*" and cursor != "" else "&")+"&".join({f"game_id={entry['id']}" for entry in games}),headers=headers)
+			streamData=json.loads(request.text)
+			streams.extend(streamData['data'])
+			cursor=""
+			if 'pagination' in streamData:
+				if 'cursor' in streamData['pagination']:
+					cursor=streamData['pagination']['cursor']
+		chunkOffset+=maxChunkSize
 else:
 	games=options['categories'][options['group']]
 	for chunk in [games[index:index+maxChunkSize] for index in range(0,len(games),maxChunkSize)]:
