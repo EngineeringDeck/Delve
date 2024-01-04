@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import ahocorasick
 import argparse
 from datetime import datetime,timedelta
 import json
@@ -22,12 +23,13 @@ operation.add_argument("-v","--variety",action='store_true',help="Search for var
 for attribute, value in vars(arguments.parse_args()).items():
 	options[attribute]=value
 
+blacklist=ahocorasick.Automaton()
+for index,key in enumerate(options['tags']['filters']):
+	blacklist.add_word(key,(index,key))
+blacklist.make_automaton()
+
 def blacklisted(tags):
-	for word in options['tags']['filters']:
-		for tag in tags:
-			if word in tag:
-				return True
-	return False
+	return len([match for match in blacklist.iter(" ".join(tags))]) > 0
 
 def reject(name,reason):
 	print("Rejecting: "+name+" ("+str(reason)+")")
