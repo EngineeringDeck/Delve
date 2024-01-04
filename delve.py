@@ -13,10 +13,11 @@ with open(os.environ['DELVE_OPTIONS_PATH'],'r') as input:
 	options=yaml.load(input.read(),Loader=yaml.Loader)
 
 arguments=argparse.ArgumentParser()
-arguments.add_argument("-g","--group",default="default",help="Category group")
 arguments.add_argument("-o","--output",help="Output file")
-arguments.add_argument("-f","--follows",action='store_true',help="Search followed channels rather than games")
-arguments.add_argument("-v","--variety",action='store_true',help="Search for variety streamers rather than games")
+operation=arguments.add_mutually_exclusive_group(required=True)
+operation.add_argument("-g","--group",default="default",help="Category group")
+operation.add_argument("-f","--follows",action='store_true',help="Search followed channels rather than games")
+operation.add_argument("-v","--variety",action='store_true',help="Search for variety streamers rather than games")
 for attribute, value in vars(arguments.parse_args()).items():
 	options[attribute]=value
 
