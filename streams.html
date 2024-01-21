@@ -5,29 +5,43 @@
 		<script>
 			var games={};
 
-			function Hide(game) {
-				games[game.currentTarget.innerText].forEach(card => card.style.display='none');
+			function ShowGame(button,cards) {
+				cards.forEach(card => card.style.display='inline-block');
+				button.classList.remove('clicked');
 			}
 
-			function Deserialize() {
-				body=document.createElement('div');
-				body.className="body";
+			function HideGame(button,cards) {
+				cards.forEach(card => card.style.display='none');
+				button.classList.add('clicked');
+			}
+
+			function ToggleGame(event) {
+				button=event.currentTarget;
+				cards=games[button.innerText];
+				if (button.classList.contains('clicked')) {
+					ShowGame(button,cards);
+				} else {
+					HideGame(button,cards)
+				}
+			}
+
+			function ListStreamers() {
+				listing=document.getElementById('listing');
 				streams.forEach(entry => {
 					card=document.createElement('div');
-					card.className="card";
+					card.className='entry card';
 					game=document.createElement('div');
 					game.className='game';
 					game.innerText=entry['game'];
-					game.addEventListener("click", Hide);
 					if (games.hasOwnProperty(game.innerText))
 						games[game.innerText].push(card);
 					else
 						games[game.innerText]=[card];
-					card.appendChild(game);
 					link=document.createElement('a');
 					link.href="https://www.twitch.tv/"+entry['streamer'];
 					image=document.createElement('img');
 					image.src=entry['thumbnail'];
+					link.appendChild(game);
 					link.appendChild(image);
 					card.appendChild(link);
 					title=document.createElement('div');
@@ -48,9 +62,19 @@
 						tags.appendChild(document.createElement('wbr'));
 					});
 					card.appendChild(tags);
-					body.appendChild(card);
+					listing.appendChild(card);
 				});
-				document.body.appendChild(body);
+			}
+
+			function PopulateGameFilters() {
+				Object.keys(games).sort().forEach(game => {
+					listing=document.getElementById('gameFilters');
+					button=document.createElement('div');
+					button.className='entry button';
+					button.innerText=game;
+					button.addEventListener("click",ToggleGame);
+					listing.appendChild(button);
+				});
 			}
 
 			function Load() {
@@ -64,10 +88,46 @@
 				let script=document.createElement("script");
 				script.setAttribute("src",scriptFile);
 				script.setAttribute("type","text/javascript");
-				script.addEventListener("load",() => {
-					Deserialize();
+				script.addEventListener('load',() => {
+					ListStreamers();
+					PopulateGameFilters();
 				});
 				document.body.appendChild(script);
+
+				Array.from(document.getElementsByClassName('accordion')).forEach(accordion => {
+					Array.from(accordion.getElementsByClassName('label')).forEach(label => {
+						label.addEventListener('click',event => {
+							Array.from(event.currentTarget.getElementsByClassName('caret')).forEach(caret => {
+								if (caret.innerText == '\u2228') {
+									caret.innerText="\u2227";
+								} else {
+									caret.innerText="\u2228";
+								}
+							});
+						});
+					});
+				});
+
+				document.getElementById('gameFiltersToggle').addEventListener('click',() => {
+					listing=document.getElementById('gameFilters');
+					if (listing.style.display == 'block') {
+						listing.style.display='none';
+					} else {
+						listing.style.display='block';
+					}
+				});
+
+				document.getElementById('hideAllGames').addEventListener('click',() => {
+					Array.from(document.getElementById('gameFilters').getElementsByClassName('button')).forEach(button => {
+						HideGame(button,games[button.innerText]);
+					});
+				});
+
+				document.getElementById('showAllGames').addEventListener('click',() => {
+					Array.from(document.getElementById('gameFilters').getElementsByClassName('button')).forEach(button => {
+						ShowGame(button,games[button.innerText]);
+					});
+				});
 			}
 		</script>
 		<style>
@@ -77,17 +137,59 @@
 				padding: 0px;
 			}
 
-			div.card {
+			div.accordion span.label {
+				font-size: 150%;
+				font-family: "Calibri";
+				font-weight: bold;
+				color: white;
+				cursor: pointer;
+			}
+
+			div.accordion span.caret {
+				font-family: "Consolas";
+			}
+
+			div.filter {
+				border-top: solid white 1px;
+				border-bottom: solid white 1px;
+				padding: 1em 1em 0em 1em;
+				line-height: 2em;
+			}
+
+			div.listing {
+				margin-top: 1em;
+			}
+
+			div.entry {
 				display: inline-block;
 				font-weight: normal;
 				background-color: white;
-				border-radius: 25px;
-				padding: 2em;
 				text-align: center;
-				width: calc(440px + 2em);
 				vertical-align: top;
 				margin-bottom: 1em;
+			}
+
+			div.entry:not(:last-child) {
 				margin-right: 1em;
+			}
+
+			div.button {
+				border-radius: 5px;
+				padding: 0.5em 1em 0.5em 1em;
+				font-family: "Calibri";
+				cursor: pointer;
+				line-height: 1em;
+			}
+
+			div.button.clicked {
+				background-color: lightgrey;
+			}
+
+			div.card {
+				border-radius: 25px;
+				padding: 2em;
+				width: calc(440px + 2em);
+				margin-bottom: 1em;
 			}
 
 			div.streamer {
@@ -151,6 +253,10 @@
 		</style>
 	</head>
 	<body onload="Load();">
-
+		<div class="accordion"><span id="gameFiltersToggle" class="label">Filter Games&nbsp;<span class="caret">&and;</span>&nbsp;</span><div id="hideAllGames" class="entry button">Hide All</div><div id="showAllGames" id="hideAllGames"class="entry button">Show All</div></div>
+		<div id="gameFilters" class="filter" style="display: none;">
+		</div>
+		<div id="listing" class="listing">
+		</div>
 	</body>
 </html>
