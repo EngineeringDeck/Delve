@@ -40,6 +40,7 @@
 					link=document.createElement('a');
 					link.href="https://www.twitch.tv/"+entry['streamer'];
 					image=document.createElement('img');
+					image.setAttribute('crossOrigin', '');
 					image.src=entry['thumbnail'];
 					link.appendChild(game);
 					link.appendChild(image);
@@ -74,6 +75,36 @@
 					button.innerText=game;
 					button.addEventListener("click",ToggleGame);
 					listing.appendChild(button);
+				});
+			}
+
+			function ImageMatch(benchmark,candidate) {
+				count=benchmark.length;
+				squares=0;
+				for (pixel=0; pixel < count; pixel++) squares += (benchmark[pixel]-candidate[pixel])*(benchmark[pixel]-candidate[pixel]);
+				return Math.sqrt(squares/count) <= 1;
+			}
+
+			function Prune(benchmarkImageData,cards,index) {
+				count=cards.length;
+				document.getElementById('pruneProgress').value=(index/count)*100;
+				document.getElementById('pruneCount').innerText=index+"/"+count;
+				if (index >= count) return;
+
+				promise=new Promise((proceed) => {
+					card=cards[index];
+					candidateCanvas=document.getElementById('candidateThumbnail');
+					candidateContext=candidateCanvas.getContext('2d',{willReadFrequently: true});
+					requestAnimationFrame(() => {
+						candidateContext.drawImage(card.getElementsByTagName('img')[0],0,0);
+						candidateImageData=candidateContext.getImageData(0,0,candidateCanvas.width,candidateCanvas.height);
+						if (ImageMatch(benchmarkImageData.data,candidateImageData.data)) card.style.display='none';
+						proceed(index);
+					});
+				});
+
+				promise.then(success => {
+					Prune(benchmarkImageData,cards,index+1);
 				});
 			}
 
@@ -117,6 +148,15 @@
 					}
 				});
 
+				document.getElementById('pruneToggle').addEventListener('click',() => {
+					listing=document.getElementById('pruneOptions');
+					if (listing.style.display == 'block') {
+						listing.style.display='none';
+					} else {
+						listing.style.display='block';
+					}
+				});
+
 				document.getElementById('hideAllGames').addEventListener('click',() => {
 					Array.from(document.getElementById('gameFilters').getElementsByClassName('button')).forEach(button => {
 						HideGame(button,games[button.innerText]);
@@ -128,6 +168,20 @@
 						ShowGame(button,games[button.innerText]);
 					});
 				});
+
+				document.getElementById('prune').addEventListener('click',() => {
+					benchmarkCanvas=document.getElementById('benchmarkThumbnail');
+					benchmarkContext=benchmarkCanvas.getContext('2d');
+					benchmarkImageData=benchmarkContext.getImageData(0,0,benchmarkCanvas.width,benchmarkCanvas.height);
+					Prune(benchmarkImageData,document.getElementsByClassName('card'),0);
+				});
+
+				pruneBenchmarkImage=new Image();
+				pruneBenchmarkImage.setAttribute('crossOrigin', '');
+				pruneBenchmarkImage.addEventListener('load',() => {
+					document.getElementById('benchmarkThumbnail').getContext('2d').drawImage(pruneBenchmarkImage,0,0);
+				});
+				pruneBenchmarkImage.src="https://static-cdn.jtvnw.net/ttv-static/404_preview-440x248.jpg";
 			}
 		</script>
 		<style>
@@ -135,6 +189,37 @@
 				background-color: #9146FF;
 				margin: 2em;
 				padding: 0px;
+			}
+
+			canvas {
+				margin: 1em;
+				border: solid white 1px;
+			}
+
+			label, progress {
+				font-size: 125%;
+				font-family: "Calibri";
+				font-weight: bold;
+				color: white;
+			}
+
+			progress {
+				width: 50%;
+			}
+
+			label {
+				margin-right: 0.5em;
+			}
+
+			div.description {
+				color: white;
+				font-size: 125%;
+				display: inline-block;
+				margin-left: 1em;
+			}
+
+			div.accordion {
+				margin-top: 1em;
 			}
 
 			div.accordion span.label {
@@ -173,7 +258,7 @@
 				margin-right: 1em;
 			}
 
-			div.button {
+			div.button, button {
 				border-radius: 5px;
 				padding: 0.5em 1em 0.5em 1em;
 				font-family: "Calibri";
@@ -181,7 +266,17 @@
 				line-height: 1em;
 			}
 
-			div.button.clicked {
+			button {
+				background-color: ghostwhite;
+				border: none;
+				margin-right: 1em;
+			}
+
+			button:hover {
+				background-color: white;
+			}
+
+			div.button.clicked, button:active {
 				background-color: lightgrey;
 			}
 
@@ -241,6 +336,7 @@
 			button {
 				cursor: pointer;
 				margin-left: 1em;
+				margin-bottom: 1em;
 			}
 
 			img {
@@ -253,8 +349,27 @@
 		</style>
 	</head>
 	<body onload="Load();">
-		<div class="accordion"><span id="gameFiltersToggle" class="label">Filter Games&nbsp;<span class="caret">&and;</span>&nbsp;</span><div id="hideAllGames" class="entry button">Hide All</div><div id="showAllGames" id="hideAllGames"class="entry button">Show All</div></div>
-		<div id="gameFilters" class="filter" style="display: none;">
+		<div class="accordion">
+			<span id="pruneToggle" class="label">Prune Ended Streams&nbsp;<span class="caret">&and;</span>&nbsp;</span>
+			<div class="description">Sometimes streams go offline after the last time Delve updated. Use this to remove them from the list. Note that this may take some time on a large number of streams.</div>
+			<div id="pruneOptions" class="filter" style="display: none;">
+				<div>
+					<canvas id="benchmarkThumbnail" width="440" height="248"></canvas>
+					<canvas id="candidateThumbnail" width="440" height="248"></canvas>
+				</div>
+				<div>
+					<button id="prune" class="entry">Prune</button>
+					<label>Progress: <span id="pruneCount">0/0</span></label>
+					<progress id="pruneProgress" max="100" value="0"></progress>
+				</div>
+			</div>
+		</div>
+		<div class="accordion">
+			<span id="gameFiltersToggle" class="label">Filter Games&nbsp;<span class="caret">&and;</span>&nbsp;</span>
+			<div id="hideAllGames" class="entry button">Hide All</div>
+			<div id="showAllGames" class="entry button">Show All</div>
+			<div class="description">Filter results by game title.</div>
+			<div id="gameFilters" class="filter" style="display: none;"></div>
 		</div>
 		<div id="listing" class="listing">
 		</div>
