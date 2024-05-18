@@ -4,25 +4,63 @@
 		<link rel="icon" type="image/x-icon" href="branding/favicon.ico">
 		<script>
 			var games={};
+			var restrictedChats={
+				"follower": [],
+				"subscriber": [],
+				"emote": []
+			};
+			var strikes=new Map();
 
-			function ShowGame(button,cards) {
-				cards.forEach(card => card.style.display='inline-block');
+			function IncreaseStrikes(card) {
+				strikes.set(card,strikes.get(card)+1);
+			}
+
+			function DecreaseStrikes(card) {
+				strikes.set(card,strikes.get(card)-1);
+			}
+
+			function StrikesCleared(card) {
+				return strikes.get(card) <= 0;
+			}
+
+			function ShowCards(button,cards) {
+				cards.forEach(card => {
+					DecreaseStrikes(card);
+					if (StrikesCleared(card)) card.style.display='inline-block';
+				});
 				button.classList.remove('clicked');
 			}
 
-			function HideGame(button,cards) {
-				cards.forEach(card => card.style.display='none');
+			function HideCards(button,cards) {
+				cards.forEach(card => {
+					card.style.display='none';
+					IncreaseStrikes(card);
+				});
 				button.classList.add('clicked');
+			}
+
+			function ToggleCards(button,cards) {
+				if (button.classList.contains('clicked')) {
+					ShowCards(button,cards);
+				} else {
+					HideCards(button,cards)
+				}
 			}
 
 			function ToggleGame(event) {
 				button=event.currentTarget;
-				cards=games[button.innerText];
-				if (button.classList.contains('clicked')) {
-					ShowGame(button,cards);
-				} else {
-					HideGame(button,cards)
-				}
+				ToggleCards(button,games[button.innerText]);
+			}
+
+			function ToggleRestrictedChat(event) {
+				button=event.currentTarget;
+				ToggleCards(button,restrictedChats[button.dataset.restrictionType]);
+			}
+
+			function RestrictCard(type,card) {
+				restrictedChats[type].push(card);
+				IncreaseStrikes(card);
+				card.style.display='none';
 			}
 
 			function ListStreamers() {
@@ -30,6 +68,7 @@
 				streams.forEach(entry => {
 					card=document.createElement('div');
 					card.className='entry card';
+					card.style.display='inline-block';
 					game=document.createElement('div');
 					game.className='game';
 					game.innerText=entry['game'];
@@ -45,14 +84,16 @@
 					link.appendChild(game);
 					link.appendChild(image);
 					card.appendChild(link);
+					details=document.createElement('div');
+					details.className='details';
 					title=document.createElement('div');
 					title.className='title';
 					title.innerText=entry['title'];
-					card.appendChild(title);
+					details.appendChild(title);
 					streamer=document.createElement('div');
 					streamer.className="streamer";
 					streamer.innerText=entry['streamer']+" | "+entry['viewers'];
-					card.appendChild(streamer);
+					details.appendChild(streamer);
 					tags=document.createElement('div');
 					tags.className='tags';
 					entry['tags'].forEach(name => {
@@ -62,8 +103,13 @@
 						tags.appendChild(tag);
 						tags.appendChild(document.createElement('wbr'));
 					});
-					card.appendChild(tags);
+					details.appendChild(tags);
+					card.appendChild(details);
 					listing.appendChild(card);
+					strikes.set(card,0);
+					if (entry.restrictions.follower) RestrictCard('follower',card);
+					if (entry.restrictions.subscriber) RestrictCard('subscriber',card);
+					if (entry.restrictions.emote) RestrictCard('emote',card);
 				});
 			}
 
@@ -98,7 +144,10 @@
 					requestAnimationFrame(() => {
 						candidateContext.drawImage(card.getElementsByTagName('img')[0],0,0);
 						candidateImageData=candidateContext.getImageData(0,0,candidateCanvas.width,candidateCanvas.height);
-						if (ImageMatch(benchmarkImageData.data,candidateImageData.data)) card.style.display='none';
+						if (ImageMatch(benchmarkImageData.data,candidateImageData.data)) {
+							IncreaseStrikes(card);
+							card.style.display='none';
+						}
 						proceed(index);
 					});
 				});
@@ -157,17 +206,30 @@
 					}
 				});
 
+				document.getElementById('restrictionFiltersToggle').addEventListener('click',() => {
+					listing=document.getElementById('restrictionFilters');
+					if (listing.style.display == 'block') {
+						listing.style.display='none';
+					} else {
+						listing.style.display='block';
+					}
+				});
+
 				document.getElementById('hideAllGames').addEventListener('click',() => {
 					Array.from(document.getElementById('gameFilters').getElementsByClassName('button')).forEach(button => {
-						HideGame(button,games[button.innerText]);
+						if (!button.classList.contains('clicked')) button.dispatchEvent(new Event('click'));
 					});
 				});
 
 				document.getElementById('showAllGames').addEventListener('click',() => {
 					Array.from(document.getElementById('gameFilters').getElementsByClassName('button')).forEach(button => {
-						ShowGame(button,games[button.innerText]);
+						if (button.classList.contains('clicked')) button.dispatchEvent(new Event('click'));
 					});
 				});
+
+				document.getElementById('followerOnly').addEventListener('click',ToggleRestrictedChat);
+				document.getElementById('subscriberOnly').addEventListener('click',ToggleRestrictedChat);
+				document.getElementById('emoteOnly').addEventListener('click',ToggleRestrictedChat);
 
 				document.getElementById('prune').addEventListener('click',() => {
 					benchmarkCanvas=document.getElementById('benchmarkThumbnail');
@@ -294,6 +356,12 @@
 				text-align: left;
 			}
 
+			div.details {
+				width: 440px;
+				margin-left: 1em;
+				margin-right: 1em;
+			}
+
 			div.title {
 				font-family: "DejaVu Serif";
 				font-size: 100%;
@@ -362,6 +430,15 @@
 					<label>Progress: <span id="pruneCount">0/0</span></label>
 					<progress id="pruneProgress" max="100" value="0"></progress>
 				</div>
+			</div>
+		</div>
+		<div class="accordion">
+			<span id="restrictionFiltersToggle" class="label">Chat Restrictions&nbsp;<span class="caret">&and;</span>&nbsp;</span>
+			<div class="description">Filter results by chat restrictions.</div>
+			<div id="restrictionFilters" class="filter" style="display: none;">
+				<div id="followerOnly" class="entry button clicked" data-restriction-type="follower">Follower-Only Chat</div>
+				<div id="subscriberOnly" class="entry button clicked" data-restriction-type="subscriber">Subscriber-Only Chat</div>
+				<div id="emoteOnly" class="entry button clicked" data-restriction-type="emote">Emote-Only Chat</div>
 			</div>
 		</div>
 		<div class="accordion">
