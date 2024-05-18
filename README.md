@@ -6,7 +6,7 @@
 
 ## Why?
 
-I wrote Delve mainly as a tool for finding new people to raid. It compensates for Twitch's shortcomings in its followed channels listing. The listing has an upper limit and will not show all channels you follow. It also provides no grouping and filtering options.
+I wrote Delve mainly as a tool for finding new people to raid. It compensates for Twitch's shortcomings in its followed channels listing, which has an upper limit and will not show all channels you follow. Twitch also provides no grouping and filtering options.
 
 # Usage
 
