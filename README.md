@@ -2,7 +2,7 @@
 
 ## What?
 
-Delve is a tool for finding streamers in a list of Twitch categories and listing them in a single, easy to see interface.
+[Delve](http://rewire.hlmjr.com/delve.html) is a tool for finding streamers in a list of Twitch categories and listing them in a single, easy to see interface.
 
 ## Why?
 
